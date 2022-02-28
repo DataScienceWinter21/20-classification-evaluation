@@ -1,0 +1,196 @@
+---
+title: "Classification Intro"
+author: "Bastola"
+date: "`r format(Sys.Date(), ' %B %d %Y')`"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      collapse = TRUE, 
+                      comment=NA, 
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 4, fig.width = 6, fig.align='center')
+
+library(tidyverse) 
+library(caret)
+library(class)
+library(patchwork)
+library(tidymodels)
+library(mlbench)     # for PimaIndiansDiabetes2 dataset
+library(janitor)
+library(parsnip)
+library(kknn)
+library(paletteer)
+library(corrr)
+library(scico)
+library(forcats)
+
+# Load the fire data
+
+fire <- read_csv("https://raw.githubusercontent.com/deepbas/statdatasets/main/Algeriafires.csv")
+fire <- fire %>% clean_names() %>% na.omit() %>% mutate_at(c(10,13), as.numeric)
+fire1 <- fire %>% mutate(across(where(is.numeric), standardize))
+
+fire_raw <- fire %>% select(temperature, isi, classes)
+
+fire_recipe <- recipe(classes ~ ., data = fire_raw) %>%
+ step_scale(all_predictors()) %>%
+ step_center(all_predictors()) %>%
+ prep()
+
+fire_scaled <- bake(fire_recipe, fire_raw)
+
+fire_knn_spec <- nearest_neighbor(mode = "classification",
+                             engine = "kknn",
+                             weight_func = "rectangular",
+                             neighbors = 5)
+
+fire_knn_fit <- fire_knn_spec %>%
+ fit(classes ~ ., data = fire_scaled)
+
+fire_knn_workflow <- workflow() %>% 
+  add_recipe(fire_recipe) %>%
+  add_model(fire_knn_spec)
+
+fire_fit <- fit(fire_knn_workflow, data = fire_raw)
+
+
+```
+
+## Your Turn 1
+
+1. Load the `mlbench` package to get `PimaIndiansDiabetes2` dataset.
+
+
+```{r}
+# Load the data - diabetes
+data(PimaIndiansDiabetes2)
+db <- PimaIndiansDiabetes2
+db <- db %>% na.omit() %>% mutate(diabetes = fct_rev(factor(diabetes))) 
+db_raw <- db %>% select(glucose, insulin, diabetes)
+
+```
+
+
+a. Set aside 20% of the cases using the following code. We'll make predictions on those penguins later.
+
+```{r}
+set.seed(1234)
+
+db_split <- initial_split(db, prop = 0.80)
+
+# Create training data
+db_train <- db_split %>%
+                    training()
+
+# Create testing data
+db_test <- db_split %>%
+                    testing()
+
+```
+  
+  
+b. Follow the steps to train a 7-NN classifier using the `tidymodels` toolkit 
+    
+
+```{r}
+db_recipe <- 
+```
+    
+
+```{r}
+db_knn_spec7 <- nearest_neighbor(mode = "classification",
+                             engine = "kknn",
+                             weight_func = "rectangular",
+                             neighbors = 7)
+
+db_workflow <- 
+  
+```
+
+
+```{r}
+db_fit <- fit(db_workflow, data = db_train)
+```
+    
+c. Classify the penguins in the `test` data frame. How did you do?
+
+```{r}
+test_features <- db_test %>% select(glucose, insulin) %>% data.frame()
+db_pred <- predict(db_fit, test_features, type = "raw")
+
+db_results <- 
+
+# Accuracy
+
+
+```
+3. Repeat the above steps with 50-50 split in the dataset.
+
+
+# Your Turn 2
+
+*Answer:*
+
+
+```{r}
+accuracy(fire_results3, truth = classes,
+         estimate = predicted)
+```
+
+
+# Your Turn 3
+
+a. Creating the recipe
+
+```{r}
+db_recipe <- recipe(
+  diabetes ~  glucose + insulin, 
+  data = db_raw
+) %>%
+  step_scale(all_predictors()) %>%
+  step_center(all_predictors())
+```
+
+
+b. Create your model specification and use `tune()` as a placeholder for the number of neighbors
+
+```{r}
+knn_spec <- nearest_neighbor(
+  weight_func = "rectangular", 
+  neighbors = tune() #<<
+) %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+```
+
+
+c. Split the `fire_train` data set into `v = 5` folds, stratified by `diabetes`
+
+```{r}
+db_vfold <- 
+```
+
+
+d. Create a grid of $K$ values, the number of neighbors and run 5-fold CV on the `k_vals` grid, storing four performance metrics
+
+```{r}
+k_vals <-
+```
+
+
+```{r}
+knn_fit <- 
+    
+```
+
+
+```{r}
+cv_metrics <- 
+```
+
